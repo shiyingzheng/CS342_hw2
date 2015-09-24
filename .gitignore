@@ -6,3 +6,8 @@
 !*.h
 !README*
 !Makefile
+!*.html
+!*.gif
+!*.ico
+!*.jpg
+!*.pdf
