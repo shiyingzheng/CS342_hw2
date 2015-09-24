@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 int main(int argc, char** argv) {	
 
@@ -35,6 +36,7 @@ int main(int argc, char** argv) {
 
 	struct sockaddr_in remote_addr;
 	unsigned int socklen = sizeof(remote_addr); 
+	// wait for a connection
 	res = listen(server_sock,0);
 	if(res < 0) {
 		perror("Error listening for connection");
@@ -42,8 +44,6 @@ int main(int argc, char** argv) {
 	}
 
 	while(1) {
-		// wait for a connection
-		
 		int sock;
 		sock = accept(server_sock, (struct sockaddr*)&remote_addr, &socklen);
 		if(sock < 0) {
