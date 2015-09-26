@@ -6,20 +6,27 @@
 #include <sys/uio.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include <pthread.h>
 
+static char* dir;
 
+int file_to_socket(int file_descriptor, int sock) {
+	    //write(sock, protocol, strlen(protocol));
+    	//write(sock, "200 OK\r\n\r\n", 10);
+		//write(sock, file, strlen(file));
+}
 void* server_stuff(void* sockptr) {
     int sock = *(int*) sockptr;
     char buf[255];
     // memset(&buf,0,sizeof(buf));
     int recv_count = recv(sock, buf, 255, 0);
     if(recv_count<0) {
-         perror("Receive failed");	
-         exit(1); 
+         perror("Receive failed");
+         exit(1);
     }
 
     char method[6], file[255], protocol[10];
@@ -38,7 +45,7 @@ void* server_stuff(void* sockptr) {
 
     if (strcmp(method,"GET")){
         write(sock, protocol, strlen(protocol));
-        write(sock, " 501 Not Implemented\r\n\r\n", 24); 
+        write(sock, " 501 Not Implemented\r\n\r\n", 24);
     }
     else {
 
@@ -50,41 +57,48 @@ void* server_stuff(void* sockptr) {
     pthread_exit(0);
 }
 
-int main(int argc, char** argv) {	
+int main(int argc, char** argv) {
 
     if (argc < 3) {
-        perror("Usage: hw2 <port> <folder>\n");
+        perror("Usage: hw2 <port> <folder> ");
         exit(1);
     }
     int port;
-    int portstatus = sscanf(argv[1], "%d", &port);
-    if(!portstatus) {
-        perror("port must be a number");
+    int port_status = sscanf(argv[1], "%d", &port);
+    if(!port_status) {
+        perror("Port must be a number ");
         exit(1);
     }
 
-    char dir[100];
-    int dirstatus = sscanf(argv[2], "%s", dir);
-    if(!dirstatus) {
-        perror("invalid folder");
+    struct stat dir_stat;
+    int stat_status = stat(argv[2], &dir_stat);
+    if(stat_status<0) {
+        perror("Invalid folder ");
         exit(1);
     }
+
+    if(!(dir_stat.st_mode & S_IFDIR)) {
+        perror("Please use a folder ");
+        exit(1);
+    }
+
+    dir = argv[2];
 
 	int server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_sock < 0) {
 		perror("Creating socket failed: ");
 		exit(1);
 	}
-	
-	// allow fast reuse of ports 
+
+	// allow fast reuse of ports
 	int reuse_true = 1;
 	setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &reuse_true, sizeof(reuse_true));
 
 	struct sockaddr_in addr; 	// internet socket address data structure
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(8080); // byte order is significant
+	addr.sin_port = htons(port); // byte order is significant
 	addr.sin_addr.s_addr = INADDR_ANY; // listen to all interfaces
-	
+
 	int res = bind(server_sock, (struct sockaddr*)&addr, sizeof(addr));
 	if(res < 0) {
 		perror("Error binding to port");
@@ -92,7 +106,7 @@ int main(int argc, char** argv) {
 	}
 
 	struct sockaddr_in remote_addr;
-	unsigned int socklen = sizeof(remote_addr); 
+	unsigned int socklen = sizeof(remote_addr);
 	// wait for a connection
 	res = listen(server_sock,0);
 	if(res < 0) {
@@ -110,7 +124,7 @@ int main(int argc, char** argv) {
 		}
         pthread_create(&thread, NULL, server_stuff, (void*)&sock);
         pthread_detach(thread);
-		
+
 	}
 
 	shutdown(server_sock,SHUT_RDWR);
