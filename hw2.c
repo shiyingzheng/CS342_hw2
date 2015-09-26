@@ -83,6 +83,9 @@ int main(int argc, char** argv) {
     }
 
     dir = argv[2];
+    if (dir[strlen(dir)-1] == '/') {
+        dir[strlen(dir)] = 0;
+    }
 
 	int server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_sock < 0) {
