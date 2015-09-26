@@ -68,9 +68,19 @@ void* server_stuff(void* sockptr) {
         write(sock, " 501 Not Implemented\r\n\r\n", 24);
     }
     else {
-		write(sock, protocol, strlen(protocol));
-		int bytes_written = file_to_socket(file, sock);
-		//deal with bytes_written
+		char filepath[255];
+        strcpy(filepath,dir);
+        strcat(filepath,file);
+        struct stat dir_stat;
+        int stat_status = stat(filepath, &dir_stat);
+        if(stat_status<0) {
+            write(sock, protocol, strlen(protocol));
+            write(sock, " 404 File not Found\r\n\r\n", 23);
+        }
+		else{
+			write(sock, protocol, strlen(protocol));
+			int bytes_written = file_to_socket(filepath, sock);
+		}
     }
 
     shutdown(sock,SHUT_RDWR);
@@ -104,6 +114,9 @@ int main(int argc, char** argv) {
     }
 
     dir = argv[2];
+    if (dir[strlen(dir)-1] == '/') {
+        dir[strlen(dir)] = 0;
+    }
 
 	int server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_sock < 0) {
