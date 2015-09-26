@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
+static char* dir;
 
 void* server_stuff(void* sockptr) {
     int sock = *(int*) sockptr;
@@ -60,24 +61,23 @@ int main(int argc, char** argv) {
     int port;
     int port_status = sscanf(argv[1], "%d", &port);
     if(!port_status) {
-        perror("port must be a number ");
-        exit(1);
-    }
-
-    char dir[255];
-    int dir_status = sscanf(argv[2], "%s", dir);
-    if(!dir_status) {
-        perror("invalid folder ");
+        perror("Port must be a number ");
         exit(1);
     }
 
     struct stat dir_stat;
-    int stat_status = stat(dir, &dir_stat);
-    if(!stat_status) {
-        perror("invalid folder ");
+    int stat_status = stat(argv[2], &dir_stat);
+    if(stat_status<0) {
+        perror("Invalid folder ");
         exit(1);
     }
     
+    if(!(dir_stat.st_mode & S_IFDIR)) {
+        perror("Please use a folder ");
+        exit(1);
+    }
+
+    dir = argv[2];
 
 	int server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_sock < 0) {
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 
 	struct sockaddr_in addr; 	// internet socket address data structure
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(8080); // byte order is significant
+	addr.sin_port = htons(port); // byte order is significant
 	addr.sin_addr.s_addr = INADDR_ANY; // listen to all interfaces
 	
 	int res = bind(server_sock, (struct sockaddr*)&addr, sizeof(addr));
