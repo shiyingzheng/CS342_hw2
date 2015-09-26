@@ -11,6 +11,24 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
+
+void* server_stuff(void* sockptr) {
+    int sock = *(int*) sockptr;
+    char buf[255];
+    // memset(&buf,0,sizeof(buf));
+    int recv_count = recv(sock, buf, 255, 0);
+    if(recv_count<0) {
+         perror("Receive failed");	
+         exit(1); 
+    }
+
+    printf("%s",buf);																							
+
+    shutdown(sock,SHUT_RDWR);
+    close(sock);
+    pthread_exit(0);
+}
+
 int main(int argc, char** argv) {	
 
 	int server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -43,6 +61,7 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 
+    pthread_t thread;
 	while(1) {
 		int sock;
 		sock = accept(server_sock, (struct sockaddr*)&remote_addr, &socklen);
@@ -50,16 +69,9 @@ int main(int argc, char** argv) {
 			perror("Error accepting connection");
 			exit(1);
 		}
+        pthread_create(&thread, NULL, server_stuff, (void*)&sock);
+        pthread_detach(thread);
 		
-		char buf[255];
-		memset(&buf,0,sizeof(buf));
-		int recv_count = recv(sock, buf, 255, 0);
-		if(recv_count<0) { perror("Receive failed");	exit(1); }
-		
-		printf("%s",buf);																							
-		
-		shutdown(sock,SHUT_RDWR);
-		close(sock);
 	}
 
 	shutdown(server_sock,SHUT_RDWR);
