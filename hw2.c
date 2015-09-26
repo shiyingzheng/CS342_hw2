@@ -22,7 +22,28 @@ void* server_stuff(void* sockptr) {
          exit(1); 
     }
 
-    printf("%s",buf);																							
+    char method[6], file[255], protocol[10];
+    int n = sscanf(buf, "%s %s %s", method, file, protocol);
+    char nbuf[3];
+    nbuf[0] = n + '0';
+    nbuf[1] = '\n';
+    nbuf[2] = '\n';
+
+    buf[recv_count] = '\n';
+    write(1, buf, recv_count+1);
+    write(1, method, strlen(method));
+    write(1, file, strlen(file));
+    write(1, protocol, strlen(protocol));
+    write(1, nbuf, 3);
+
+    if (strcmp(method,"GET")){
+        write(sock, protocol, strlen(protocol));
+        write(sock, " 501 Not Implemented\r\n\r\n", 24); 
+    }
+    else {
+
+    }
+
 
     shutdown(sock,SHUT_RDWR);
     close(sock);
@@ -30,6 +51,24 @@ void* server_stuff(void* sockptr) {
 }
 
 int main(int argc, char** argv) {	
+
+    if (argc < 3) {
+        perror("Usage: hw2 <port> <folder>\n");
+        exit(1);
+    }
+    int port;
+    int portstatus = sscanf(argv[1], "%d", &port);
+    if(!portstatus) {
+        perror("port must be a number");
+        exit(1);
+    }
+
+    char dir[100];
+    int dirstatus = sscanf(argv[2], "%s", dir);
+    if(!dirstatus) {
+        perror("invalid folder");
+        exit(1);
+    }
 
 	int server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_sock < 0) {
