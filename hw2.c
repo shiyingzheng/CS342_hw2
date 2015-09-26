@@ -71,8 +71,8 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    stat dir_stat;
-    int stat_status = stat(dir, &dirstat);
+    struct stat dir_stat;
+    int stat_status = stat(dir, &dir_stat);
     if(!stat_status) {
         perror("invalid folder ");
         exit(1);
