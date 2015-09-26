@@ -48,6 +48,15 @@ void* server_stuff(void* sockptr) {
         write(sock, " 501 Not Implemented\r\n\r\n", 24);
     }
     else {
+        char filepath[255];
+        strcpy(filepath,dir);
+        strcat(filepath,file);
+        struct stat dir_stat;
+        int stat_status = stat(filepath, &dir_stat);
+        if(stat_status<0) {
+            write(sock, protocol, strlen(protocol));
+            write(sock, " 404 File not Found\r\n\r\n", 23);
+        }
 
     }
 
