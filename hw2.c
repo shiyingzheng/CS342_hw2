@@ -6,6 +6,7 @@
 #include <sys/uio.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -53,22 +54,30 @@ void* server_stuff(void* sockptr) {
 int main(int argc, char** argv) {	
 
     if (argc < 3) {
-        perror("Usage: hw2 <port> <folder>\n");
+        perror("Usage: hw2 <port> <folder> ");
         exit(1);
     }
     int port;
-    int portstatus = sscanf(argv[1], "%d", &port);
-    if(!portstatus) {
-        perror("port must be a number");
+    int port_status = sscanf(argv[1], "%d", &port);
+    if(!port_status) {
+        perror("port must be a number ");
         exit(1);
     }
 
-    char dir[100];
-    int dirstatus = sscanf(argv[2], "%s", dir);
-    if(!dirstatus) {
-        perror("invalid folder");
+    char dir[255];
+    int dir_status = sscanf(argv[2], "%s", dir);
+    if(!dir_status) {
+        perror("invalid folder ");
         exit(1);
     }
+
+    stat dir_stat;
+    int stat_status = stat(dir, &dirstat);
+    if(!stat_status) {
+        perror("invalid folder ");
+        exit(1);
+    }
+    
 
 	int server_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_sock < 0) {
