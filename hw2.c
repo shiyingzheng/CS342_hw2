@@ -9,16 +9,36 @@
 #include <sys/stat.h>
 #include <netinet/in.h>
 #include <errno.h>
-#include <sys/stat.h>
 #include <pthread.h>
+#include <fcntl.h>
 
+#define PACKET_SIZE 256
 static char* dir;
 
-int file_to_socket(int file_descriptor, int sock) {
-	    //write(sock, protocol, strlen(protocol));
-    	//write(sock, "200 OK\r\n\r\n", 10);
-		//write(sock, file, strlen(file));
+int file_to_socket(char* file_name, int sock) {
+	int fd = open(file_name, 0, "rb");
+	char buf[PACKET_SIZE];
+	if(fd < 0) {
+		write(sock, " 500 Internal Error\r\n\r\n", 23);
+		perror("Failed to open file\n");
+		return -1;
+	}
+
+   	write(sock, " 200 OK\r\n\r\n", 11);
+   	int bytes_read;
+   	int total_bytes_written = 0;
+	while ((bytes_read = read(fd, buf, PACKET_SIZE))) {
+		int bytes_written = write(sock, buf, bytes_read);
+		if (!bytes_written){
+			perror("Sending file failed\n");
+			return -1;
+		}
+		total_bytes_written += bytes_written;
+	}
+	close(fd);
+	return total_bytes_written;
 }
+
 void* server_stuff(void* sockptr) {
     int sock = *(int*) sockptr;
     char buf[255];
@@ -48,9 +68,10 @@ void* server_stuff(void* sockptr) {
         write(sock, " 501 Not Implemented\r\n\r\n", 24);
     }
     else {
-
+		write(sock, protocol, strlen(protocol));
+		int bytes_written = file_to_socket(file, sock);
+		//deal with bytes_written
     }
-
 
     shutdown(sock,SHUT_RDWR);
     close(sock);
@@ -120,11 +141,11 @@ int main(int argc, char** argv) {
 		sock = accept(server_sock, (struct sockaddr*)&remote_addr, &socklen);
 		if(sock < 0) {
 			perror("Error accepting connection");
-			exit(1);
 		}
-        pthread_create(&thread, NULL, server_stuff, (void*)&sock);
-        pthread_detach(thread);
-
+		else {
+			pthread_create(&thread, NULL, server_stuff, (void*)&sock);
+        	pthread_detach(thread);
+		}
 	}
 
 	shutdown(server_sock,SHUT_RDWR);
