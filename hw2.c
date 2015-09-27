@@ -78,6 +78,7 @@ int file_to_socket(char* file_name, int sock) {
 void* server_stuff(void* sockptr) {
 	// receive the client request
 	int sock = *(int*) sockptr;
+	free(sockptr);
 	char buf[255];
 	int recv_count = recv(sock, buf, 255, 0);
 	if(recv_count<0) {
@@ -115,7 +116,6 @@ void* server_stuff(void* sockptr) {
                     write(sock, err404page, strlen(err404page));
 					shutdown(sock,SHUT_RDWR);
 					close(sock);
-					free(sockptr);
 					pthread_exit(0);
 				}
 			}
@@ -132,7 +132,6 @@ void* server_stuff(void* sockptr) {
 	}
 	shutdown(sock,SHUT_RDWR);
 	close(sock);
-	free(sockptr);
 	pthread_exit(0);
 }
 
@@ -212,7 +211,7 @@ int main(int argc, char** argv) {
     		// create a thread to handle requests from client side
     		pthread_attr_t attr;
 		    pthread_attr_init( &attr );
-		    pthread_attr_setdetachstate(&attr,1);
+		    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     		pthread_create(&thread, &attr, server_stuff, (void*)sockptr);
     	}
     }
