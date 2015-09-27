@@ -14,6 +14,9 @@
 
 #define PACKET_SIZE 256
 static char* dir;
+static char* err404page = " 404 Not Found\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Error 404: The file you requested does not exist.</h1></body></html>\n";
+static char* err500page = " 500 Internal Error\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Error 500: Internal server error.</h1></body></html>\n";
+static char* err501page = " 501 Not Implemented\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Error 501: Not implemented.</h1></body></html>\n";
 
 /* Sends file and other important stuff in a response through the socket*/
 int file_to_socket(char* file_name, int sock) {
@@ -21,7 +24,7 @@ int file_to_socket(char* file_name, int sock) {
 	int fd = open(file_name, 0, "rb");
 	char buf[PACKET_SIZE];
 	if(fd < 0) {
-		write(sock, " 500 Internal Error\r\n\r\n", 23);
+        write(sock, err500page, strlen(err500page));
 		perror("Failed to open file\n");
 		return -1;
 	}
@@ -87,7 +90,7 @@ void* server_stuff(void* sockptr) {
 	int n = sscanf(buf, "%s %s %s", method, file, protocol);
 	if (strcmp(method,"GET")){
 		write(sock, protocol, strlen(protocol));
-		write(sock, " 501 Not Implemented\r\n\r\n", 24);
+        write(sock, err501page, strlen(err501page));
 	}
 	else {
 		char filepath[255];
@@ -97,7 +100,7 @@ void* server_stuff(void* sockptr) {
 		int stat_status = stat(filepath, &dir_stat);
 		if(stat_status<0) {
 			write(sock, protocol, strlen(protocol));
-			write(sock, " 404 File not Found\r\n\r\n", 23);
+            write(sock, err404page, strlen(err404page));
 		}
 		else {
 			// if filepath points to a directory
@@ -109,7 +112,7 @@ void* server_stuff(void* sockptr) {
 				int stat_status = stat(filepath, &dir_stat);
 				if(stat_status<0) {
 					write(sock, protocol, strlen(protocol));
-					write(sock, " 404 File not Found\r\n\r\n", 23);
+                    write(sock, err404page, strlen(err404page));
 					shutdown(sock,SHUT_RDWR);
 					close(sock);
 					free(sockptr);
@@ -119,7 +122,7 @@ void* server_stuff(void* sockptr) {
 			// if the thing is not a file or directory
 			if (!(dir_stat.st_mode & S_IFREG)){
 				write(sock, protocol, strlen(protocol));
-				write(sock, " 501 Not Implemented\r\n\r\n", 24);
+                write(sock, err501page, strlen(err501page));
 			}
 			else{
 				write(sock, protocol, strlen(protocol));
