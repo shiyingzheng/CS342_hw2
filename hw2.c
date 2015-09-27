@@ -79,7 +79,7 @@ void* server_stuff(void* sockptr) {
 	int recv_count = recv(sock, buf, 255, 0);
 	if(recv_count<0) {
 		perror("Receive failed");
-		exit(1);
+		return NULL;
 	}
 
 	// parse arguments from request
@@ -112,6 +112,7 @@ void* server_stuff(void* sockptr) {
 					write(sock, " 404 File not Found\r\n\r\n", 23);
 					shutdown(sock,SHUT_RDWR);
 					close(sock);
+					free(sockptr);
 					pthread_exit(0);
 				}
 			}
@@ -128,6 +129,7 @@ void* server_stuff(void* sockptr) {
 	}
 	shutdown(sock,SHUT_RDWR);
 	close(sock);
+	free(sockptr);
 	pthread_exit(0);
 }
 
@@ -197,15 +199,18 @@ int main(int argc, char** argv) {
 
     pthread_t thread;
     while(1) {
-    	int sock;
-    	sock = accept(server_sock, (struct sockaddr*)&remote_addr, &socklen);
+    	int* sockptr = (int*)malloc(sizeof(int));
+    	*sockptr = accept(server_sock, (struct sockaddr*)&remote_addr, &socklen);
+    	int sock = *sockptr;
     	if(sock < 0) {
     		perror("Error accepting connection");
     	}
     	else {
     		// create a thread to handle requests from client side
-    		pthread_create(&thread, NULL, server_stuff, (void*)&sock);
-    		pthread_detach(thread);
+    		pthread_attr_t attr;
+		    pthread_attr_init( &attr );
+		    pthread_attr_setdetachstate(&attr,1);
+    		pthread_create(&thread, &attr, server_stuff, (void*)sockptr);
     	}
     }
 
