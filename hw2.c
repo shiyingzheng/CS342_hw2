@@ -52,16 +52,16 @@ void* server_stuff(void* sockptr) {
     char method[6], file[255], protocol[10];
     int n = sscanf(buf, "%s %s %s", method, file, protocol);
     char nbuf[3];
-    nbuf[0] = n + '0';
-    nbuf[1] = '\n';
-    nbuf[2] = '\n';
+  //  nbuf[0] = n + '0';
+  //  nbuf[1] = '\n';
+  //  nbuf[2] = '\n';
 
-    buf[recv_count] = '\n';
-    write(1, buf, recv_count+1);
-    write(1, method, strlen(method));
-    write(1, file, strlen(file));
-    write(1, protocol, strlen(protocol));
-    write(1, nbuf, 3);
+  //  buf[recv_count] = '\n';
+  //  write(1, buf, recv_count+1);
+  //  write(1, method, strlen(method));
+  //  write(1, file, strlen(file));
+  //  write(1, protocol, strlen(protocol));
+  //  write(1, nbuf, 3);
 
     if (strcmp(method,"GET")){
         write(sock, protocol, strlen(protocol));
@@ -77,12 +77,26 @@ void* server_stuff(void* sockptr) {
             write(sock, protocol, strlen(protocol));
             write(sock, " 404 File not Found\r\n\r\n", 23);
         }
-		else{
+        else {
+            if(dir_stat.st_mode & S_IFDIR) {
+                if (filepath[strlen(filepath)-1] != '/'){
+                    strcat(filepath, "/");
+                }
+                strcat(filepath,"index.html");
+                int stat_status = stat(filepath, &dir_stat);
+                if(stat_status<0) {
+                    write(sock, protocol, strlen(protocol));
+                    write(sock, " 404 File not Found\r\n\r\n", 23);
+                }
+            }
+            if (!(dir_stat.st_mode & S_IFREG)){
+                write(sock, protocol, strlen(protocol));
+                write(sock, " 501 Not Implemented\r\n\r\n", 24);
+            }
 			write(sock, protocol, strlen(protocol));
 			int bytes_written = file_to_socket(filepath, sock);
-		}
+        }
     }
-
     shutdown(sock,SHUT_RDWR);
     close(sock);
     pthread_exit(0);
